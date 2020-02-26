@@ -1,14 +1,10 @@
 package chalmers.dat055.clocks;
 
-import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import javafx.stage.WindowEvent;
-
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A view of a standard 12-hour cycle wall clock with three hands, a short thick one representing hours, a tall one
@@ -53,9 +49,11 @@ public abstract class ClockView extends Group {
         //
         g.translate(1, 1);
         for (int i = 0; i < 12; ++i) {
-            g.strokeLine(0.0, 0.93, 0.0, 0.875);
-            g.rotate(365.0/12.0);
+            g.rect(-0.01, 0.89, 0.02, 0.070);
+            g.rotate(360.0/12.0);
         }
+        g.setFill(Color.BLACK);
+        g.fill();
 
         return canvas;
     }
@@ -88,10 +86,15 @@ public abstract class ClockView extends Group {
         new Thread(() -> {
             while (true) {
                 var t = getTime();
-                g.clearRect(-1, -1, 2, 2);
-                drawHand(g, (t % 60.0) / 60.0, 0.025, 0.85);
-                drawHand(g, (t % 3600.0) / 3600.0, 0.05, 0.8);
-                drawHand(g, (t % 43200.0) / 43200.0, 0.075, 0.55);
+
+                Platform.runLater(() -> {
+                    // This clear is a funny side effect from the current state of the transform.
+                    g.clearRect(-1, -1, 2, 2);
+
+                    drawHand(g, (t % 60.0) / 60.0, 0.025, 0.85);
+                    drawHand(g, (t % 3600.0) / 3600.0, 0.05, 0.8);
+                    drawHand(g, (t % 43200.0) / 43200.0, 0.075, 0.55);
+                });
 
                 var w = getWait();
                 if (w < 0) { return; }
