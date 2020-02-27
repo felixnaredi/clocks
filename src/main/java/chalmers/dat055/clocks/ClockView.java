@@ -68,8 +68,8 @@ public abstract class ClockView extends Group {
     private static void drawHand(GraphicsContext g, double t, double w, double h) {
         g.save();
         g.rotate(t * 360.0);
-        g.translate(-w / 2, 0);
         g.scale(w, h);
+        g.translate(-0.5, 0);
         g.fillRect(0, 0, 1, 1);
         g.restore();
     }
@@ -91,9 +91,20 @@ public abstract class ClockView extends Group {
                     // This clear is a funny side effect from the current state of the transform.
                     g.clearRect(-1, -1, 2, 2);
 
+                    // Draw the hands
                     drawHand(g, (t % 60.0) / 60.0, 0.025, 0.85);
                     drawHand(g, (t % 3600.0) / 3600.0, 0.05, 0.8);
                     drawHand(g, (t % 43200.0) / 43200.0, 0.075, 0.55);
+
+                    // Draw the dot in the middle above the hands.
+                    g.save();
+                    g.setLineWidth(0.5);
+                    g.setStroke(Color.BLACK);
+                    g.setFill(Color.color(0.8, 0.2, 0.1));
+                    g.scale(0.04, 0.04);
+                    g.fillOval(-1, -1, 2, 2);
+                    g.strokeOval(-1, -1, 2, 2);
+                    g.restore();
                 });
 
                 var w = getWait();
