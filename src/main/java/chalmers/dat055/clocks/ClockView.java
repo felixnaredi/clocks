@@ -5,11 +5,8 @@ import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import org.checkerframework.checker.units.qual.C;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 /**
  * A view of a standard 12-hour cycle wall clock with three hands, a short thick one representing hours, a tall one
@@ -86,10 +83,10 @@ public abstract class ClockView extends Group {
      * @param height New height.
      */
     public void setSize(double width, double height) {
-        Stream.of(mDialCanvas, mHandsCanvas).forEach(c -> {
+        for (Canvas c : Arrays.asList(mDialCanvas, mHandsCanvas)) {
             c.setWidth(width);
             c.setHeight(height);
-        });
+        }
     }
 
     private void drawDial() {
