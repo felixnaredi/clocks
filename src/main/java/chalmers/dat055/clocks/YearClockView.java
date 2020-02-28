@@ -7,10 +7,6 @@ import java.time.ZonedDateTime;
  */
 public class YearClockView extends ClockView {
 
-    public YearClockView(double width, double height) {
-        super(width, height);
-    }
-
     @Override
     public double getWait() {
         return 1;

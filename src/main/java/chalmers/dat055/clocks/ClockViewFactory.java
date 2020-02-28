@@ -11,14 +11,12 @@ public class ClockViewFactory {
     /**
      * Makes a clock that will display the given time of a certain time zone.
      *
-     * @param width View width.
-     * @param height View height.
      * @param wait Update interval.
      * @param timeZone Time zone for the clock.
      * @return A clock view.
      */
-    public static ClockView make(double width, double height, double wait, ZoneId timeZone) {
-        return new ClockView(width, height) {
+    public static ClockView make(double wait, ZoneId timeZone) {
+        return new ClockView() {
 
             @Override
             public double getWait() {

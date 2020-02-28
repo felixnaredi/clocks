@@ -12,9 +12,7 @@ public class RandomClockView extends ClockView {
     double mStep;
     Random mRandom;
 
-    RandomClockView(double width, double height) {
-        super(width, height);
-
+    RandomClockView() {
         mRandom = new Random();
         mTime = mRandom.nextInt(43200);
         mStep = 0;

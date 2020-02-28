@@ -5,6 +5,11 @@ import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import org.checkerframework.checker.units.qual.C;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * A view of a standard 12-hour cycle wall clock with three hands, a short thick one representing hours, a tall one
@@ -30,39 +35,13 @@ public abstract class ClockView extends Group {
      */
     public abstract double getTime();
 
-    private static Canvas drawDial(double width, double height) {
-        var canvas = new Canvas(width, height);
-        var g = canvas.getGraphicsContext2D();
-        g.scale(width / 2, height / 2);
-
-        //
-        // Draw dial and case.
-        //
-        g.setFill(Color.BEIGE);
-        g.setStroke(Color.BLACK);
-        g.setLineWidth(2.5e-2);
-        g.fillOval(0, 0, 2, 2);
-        g.strokeOval(1.25e-2, 1.25e-2, 1.975, 1.975);
-
-        //
-        // Draw markers
-        //
-        g.translate(1, 1);
-        for (int i = 0; i < 12; ++i) {
-            g.rect(-0.01, 0.89, 0.02, 0.070);
-            g.rotate(360.0/12.0);
-        }
-        g.setFill(Color.BLACK);
-        g.fill();
-
-        return canvas;
-    }
-
     private Canvas mHandsCanvas;
+    private Canvas mDialCanvas;
 
-    public ClockView(double width, double height) {
-        mHandsCanvas = new Canvas(width, height);
-        getChildren().setAll(drawDial(width, height), mHandsCanvas);
+    public ClockView() {
+        mHandsCanvas = new Canvas();
+        mDialCanvas = new Canvas();
+        getChildren().setAll(mDialCanvas, mHandsCanvas);
     }
 
     private static void drawHand(GraphicsContext g, double t, double w, double h) {
@@ -75,40 +54,20 @@ public abstract class ClockView extends Group {
     }
 
     public void display() {
-        var width = mHandsCanvas.getWidth();
-        var height = mHandsCanvas.getHeight();
-        var g = mHandsCanvas.getGraphicsContext2D();
-        g.setFill(Color.BLACK);
-        g.scale(width / 2, height / 2);
-        g.translate(1, 1);
-        g.rotate(180);
+
+        Platform.runLater(() -> {
+            drawDial();
+            drawHands();
+        });
 
         new Thread(() -> {
             while (true) {
-                var t = getTime();
-
-                Platform.runLater(() -> {
-                    // This clear is a funny side effect from the current state of the transform.
-                    g.clearRect(-1, -1, 2, 2);
-
-                    // Draw the hands
-                    drawHand(g, (t % 60.0) / 60.0, 0.025, 0.85);
-                    drawHand(g, (t % 3600.0) / 3600.0, 0.05, 0.8);
-                    drawHand(g, (t % 43200.0) / 43200.0, 0.075, 0.55);
-
-                    // Draw the dot in the middle above the hands.
-                    g.save();
-                    g.setLineWidth(0.5);
-                    g.setStroke(Color.BLACK);
-                    g.setFill(Color.color(0.8, 0.2, 0.1));
-                    g.scale(0.04, 0.04);
-                    g.fillOval(-1, -1, 2, 2);
-                    g.strokeOval(-1, -1, 2, 2);
-                    g.restore();
-                });
+                Platform.runLater(this::drawHands);
 
                 var w = getWait();
-                if (w < 0) { return; }
+                if (w < 0) {
+                    return;
+                }
 
                 try {
                     Thread.sleep((long)(w * 1000.0));
@@ -119,4 +78,73 @@ public abstract class ClockView extends Group {
         }).start();
     }
 
+    /**
+     * Sets the size of the clock view.
+     *
+     * <p>NOTE! This method must be called before {@code display}.
+     * @param width New width.
+     * @param height New height.
+     */
+    public void setSize(double width, double height) {
+        Stream.of(mDialCanvas, mHandsCanvas).forEach(c -> {
+            c.setWidth(width);
+            c.setHeight(height);
+        });
+    }
+
+    private void drawDial() {
+        var g = mDialCanvas.getGraphicsContext2D();
+        g.save();
+
+        g.scale(mDialCanvas.getWidth() / 2, mDialCanvas.getHeight() / 2);
+        g.clearRect(0, 0, 2, 2);
+
+        // Draw dial and case.
+        g.setFill(Color.BEIGE);
+        g.setStroke(Color.BLACK);
+        g.setLineWidth(2.5e-2);
+        g.fillOval(0, 0, 2, 2);
+        g.strokeOval(1.25e-2, 1.25e-2, 1.975, 1.975);
+
+        // Draw markers
+        g.translate(1, 1);
+        for (int i = 0; i < 12; ++i) {
+            g.rect(-0.01, 0.89, 0.02, 0.070);
+            g.rotate(360.0/12.0);
+        }
+        g.setFill(Color.BLACK);
+        g.fill();
+
+        g.restore();
+    }
+
+    private void drawHands() {
+        var t = getTime();
+        var width = mHandsCanvas.getWidth();
+        var height = mHandsCanvas.getHeight();
+
+        var g = mHandsCanvas.getGraphicsContext2D();
+        g.save();
+
+        g.setFill(Color.BLACK);
+        g.scale(width / 2, height / 2);
+        g.clearRect(0, 0, 2, 2);
+        g.translate(1, 1);
+        g.rotate(180);
+
+        // Draw the hands
+        drawHand(g, (t % 60.0) / 60.0, 0.025, 0.85);
+        drawHand(g, (t % 3600.0) / 3600.0, 0.05, 0.8);
+        drawHand(g, (t % 43200.0) / 43200.0, 0.075, 0.55);
+
+        // Draw the dot in the middle above the hands.
+        g.setLineWidth(0.3);
+        g.setStroke(Color.BLACK);
+        g.setFill(Color.color(0.8, 0.2, 0.1));
+        g.scale(0.04, 0.04);
+        g.fillOval(-1, -1, 2, 2);
+        g.strokeOval(-1, -1, 2, 2);
+
+        g.restore();
+    }
 }
